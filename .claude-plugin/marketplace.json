@@ -26,6 +26,16 @@
       "author": {
         "name": "JK"
       }
+    },
+    {
+      "name": "handoff-deliver",
+      "displayName": "전달 (Deliver to Agent)",
+      "description": "stock-team/honi-team 등 서브에이전트 허브의 특정 거장에게 분석·리포트를 즉시 핸드오프. TaskCreate + 큐 파일 + INBOX 3중 적재 후 timing 질문(지금/마치고/큐에만). 트리거: '전달', '버핏에게 알려줘', 'Lynch한테 보내'. (자연어 트리거는 SKILL.md의 한글 'name: 전달'이 담당)",
+      "source": "./skills/handoff-deliver",
+      "version": "1.0.0",
+      "author": {
+        "name": "JK"
+      }
     }
   ]
 }
