@@ -12,7 +12,7 @@
       "displayName": "넘기기 (Save & Handoff)",
       "description": "현재 프로젝트의 작업 상태를 HANDOFF.md로 패키징 + GitHub push + jk-handoff 인덱스 repo에 머신별 이력 누적. 트리거: '넘기기', '저장', '백업', '동기화'. (plugin name은 path-safe 영문, 자연어 트리거는 SKILL.md의 한글 'name: 넘기기'가 담당)",
       "source": "./skills/handoff-save",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "JK"
       }
@@ -22,7 +22,7 @@
       "displayName": "받기 (Receive & Resume)",
       "description": "다른 컴퓨터에서 작업하던 것을 이어받기. jk-handoff 인덱스에서 가장 최근 작업 조회 → clone/pull → HANDOFF.md 브리핑. 트리거: '받기', '이어가기', '다른 컴퓨터에서 왔어'. (자연어 트리거는 SKILL.md의 한글 'name: 받기'가 담당)",
       "source": "./skills/handoff-receive",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "JK"
       }

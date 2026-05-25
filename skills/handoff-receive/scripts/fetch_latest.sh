@@ -103,8 +103,8 @@ EOF
     CURRENT_MACHINE=$(scutil --get ComputerName 2>/dev/null || hostname)
     echo "CURRENT_MACHINE=${CURRENT_MACHINE}"
 
-    # LATEST 머신과 현재 머신이 다르면 경고
-    LATEST_MACHINE=$(python3 -c "import json; print(json.load(open('LATEST.json')).get('machine',''))")
+    # LATEST 머신과 현재 머신이 다르면 경고 (None/빈값은 경고 안 함)
+    LATEST_MACHINE=$(python3 -c "import json; m=json.load(open('LATEST.json')).get('machine'); print(m if m else '')")
     if [ -n "$LATEST_MACHINE" ] && [ "$LATEST_MACHINE" != "$CURRENT_MACHINE" ]; then
       echo "DIFFERENT_MACHINE_WARNING=yes"
       echo "WARNING_TEXT=마지막 작업은 [${LATEST_MACHINE}]에서 했습니다. 거기에 push 안 한 변경이 남아있을 수 있어요 — 확인하셨나요?"
