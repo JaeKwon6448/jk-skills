@@ -1,68 +1,71 @@
 # jk-skills
 
-> JK의 글로벌 Claude Code 스킬 모음. 여러 맥에서 동일한 환경 유지.
+> JK의 글로벌 Claude Code 스킬 모음. **Claude Code marketplace로 배포** — 어느 맥에서든 2줄로 설치.
 
 ## 들어있는 스킬
 
-- **넘기기** — 현재 프로젝트 작업 상태를 GitHub에 저장 + `jk-handoff` 인덱스 repo에 머신 이력 누적
-- **받기** — 다른 머신에서 작업하던 것을 한 줄로 이어받기 (clone/pull → HANDOFF.md 브리핑)
+| 스킬 | 트리거 | 동작 |
+|---|---|---|
+| **넘기기** | "넘기기", "저장", "백업", "동기화" | 현재 작업 상태 HANDOFF.md로 패키징 → GitHub push → `jk-handoff` 인덱스에 머신 이력 누적 |
+| **받기** | "받기", "이어가기", "다른 컴퓨터에서 왔어" | `jk-handoff` 인덱스 조회 → 가장 최근 작업 자동 안내 → clone/pull → 브리핑 |
 
-두 스킬이 같이 동작하면서 "어느 컴퓨터에서 뭘 하다 멈췄는지" 가 머신 간에 보존된다.
-실제 작업 메타데이터는 별도 private repo `jk-handoff` 에 누적된다.
+두 스킬이 같이 돌면서 **"어느 컴퓨터에서 뭘 하다 멈췄는지"** 가 머신 간에 보존됩니다.
+실제 작업 메타데이터는 별도 private repo [`jk-handoff`](https://github.com/JaeKwon6448/jk-handoff)에 누적됩니다.
 
-## 새 맥 1회 설치
+## 새 맥에서 설치
 
-사전: `brew install gh && gh auth login` (한 번)
-
-그 다음 한 줄:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/JaeKwon6448/jk-skills/main/bootstrap.sh | bash
-```
-
-또는 동등하게:
+### 사전 (1회)
 
 ```bash
-gh repo clone JaeKwon6448/jk-skills ~/jk-skills && bash ~/jk-skills/bootstrap.sh
+brew install gh && gh auth login
 ```
 
-bootstrap이 하는 일:
-1. git/gh/python3 설치 확인
-2. gh 인증 확인
-3. 이 repo를 `~/jk-skills/` 에 clone (또는 pull)
-4. `~/jk-skills/skills/*` 를 `~/.claude/skills/` 에 **symlink** (수정 즉시 반영)
-5. `jk-handoff` 인덱스 repo를 `~/.cache/jk-handoff/` 에 미리 clone (첫 받기 빠르게)
+`gh` 인증은 jk-handoff(private repo) 접근에 필요합니다.
 
-## 업데이트 (이미 설치된 맥)
+### Claude Code에서 (2줄)
+
+```
+/plugin marketplace add JaeKwon6448/jk-skills
+/plugin install 넘기기@jk-skills
+/plugin install 받기@jk-skills
+```
+
+설치 즉시 두 스킬이 활성화되며, 어느 프로젝트에서든 자연어 트리거(`"받기"`, `"넘기기"`)로 작동합니다.
+
+## 업데이트
+
+```
+/plugin update 넘기기@jk-skills
+/plugin update 받기@jk-skills
+```
+
+또는 새 버전이 push되면 Claude Code가 알아서 알림.
+
+## 제거
+
+```
+/plugin uninstall 넘기기@jk-skills
+/plugin uninstall 받기@jk-skills
+/plugin marketplace remove jk-skills
+```
+
+## 설치 후 디렉토리
+
+```
+~/.claude/plugins/cache/jk-skills/넘기기/1.0.0/
+~/.claude/plugins/cache/jk-skills/받기/1.0.0/
+~/.cache/jk-handoff/                          ← 인덱스 캐시 (첫 받기 시 자동 생성)
+```
+
+## 직접 개발/수정하려면
+
+이 repo를 로컬에 clone해서 작업:
 
 ```bash
-cd ~/jk-skills && git pull
-```
-
-심볼릭 링크라 별도 재설치 불필요. 새 스킬이 추가됐을 때만:
-
-```bash
-bash ~/jk-skills/install.sh
-```
-
-(idempotent — 몇 번 돌려도 안전)
-
-## 디렉토리 구조
-
-```
-~/jk-skills/          ← 이 repo (스킬 진실 소스)
-├── skills/
-│   ├── 넘기기/
-│   └── 받기/
-├── install.sh
-├── bootstrap.sh
-└── README.md
-
-~/.claude/skills/      ← Claude Code가 보는 위치
-├── 넘기기 → ~/jk-skills/skills/넘기기  (symlink)
-└── 받기  → ~/jk-skills/skills/받기   (symlink)
-
-~/.cache/jk-handoff/   ← 인덱스 repo 로컬 캐시 (자동 관리)
+git clone https://github.com/JaeKwon6448/jk-skills ~/jk-skills
+# 스크립트 수정 후
+cd ~/jk-skills && git push
+# 다른 머신에서: /plugin update <name>@jk-skills
 ```
 
 ## 관련 repo
