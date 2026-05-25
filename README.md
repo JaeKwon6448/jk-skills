@@ -22,38 +22,36 @@ brew install gh && gh auth login
 
 `gh` 인증은 jk-handoff(private repo) 접근에 필요합니다.
 
-### Claude Code에서 (2줄)
+### Claude Code에서 (3줄)
 
 ```
-/plugin marketplace add JaeKwon6448/jk-skills
-/plugin install 넘기기@jk-skills
-/plugin install 받기@jk-skills
+claude plugin marketplace add JaeKwon6448/jk-skills
+claude plugin install handoff-save@jk-skills
+claude plugin install handoff-receive@jk-skills
 ```
 
-설치 즉시 두 스킬이 활성화되며, 어느 프로젝트에서든 자연어 트리거(`"받기"`, `"넘기기"`)로 작동합니다.
+> plugin name은 영문(`handoff-save` / `handoff-receive`)이지만, **자연어 트리거는 한글 그대로** — 어느 프로젝트에서든 `"넘기기"`, `"받기"`로 작동합니다. (Claude Code의 plugin cache 경로가 ASCII만 지원해서 식별자만 영문화)
 
 ## 업데이트
 
 ```
-/plugin update 넘기기@jk-skills
-/plugin update 받기@jk-skills
+claude plugin update handoff-save@jk-skills
+claude plugin update handoff-receive@jk-skills
 ```
-
-또는 새 버전이 push되면 Claude Code가 알아서 알림.
 
 ## 제거
 
 ```
-/plugin uninstall 넘기기@jk-skills
-/plugin uninstall 받기@jk-skills
-/plugin marketplace remove jk-skills
+claude plugin uninstall handoff-save@jk-skills
+claude plugin uninstall handoff-receive@jk-skills
+claude plugin marketplace remove jk-skills
 ```
 
 ## 설치 후 디렉토리
 
 ```
-~/.claude/plugins/cache/jk-skills/넘기기/1.0.0/
-~/.claude/plugins/cache/jk-skills/받기/1.0.0/
+~/.claude/plugins/cache/jk-skills/handoff-save/1.0.0/
+~/.claude/plugins/cache/jk-skills/handoff-receive/1.0.0/
 ~/.cache/jk-handoff/                          ← 인덱스 캐시 (첫 받기 시 자동 생성)
 ```
 
