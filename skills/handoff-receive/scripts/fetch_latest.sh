@@ -99,9 +99,47 @@ for k in ("project", "repo", "branch", "commit", "commit_short", "commit_url",
     print(f"{k.upper()}={v}")
 EOF
 
-    # 현재 머신 정보 부가
+    # 현재 머신 정보 + 다른-머신 경고 flag
     CURRENT_MACHINE=$(scutil --get ComputerName 2>/dev/null || hostname)
     echo "CURRENT_MACHINE=${CURRENT_MACHINE}"
+
+    # LATEST 머신과 현재 머신이 다르면 경고
+    LATEST_MACHINE=$(python3 -c "import json; print(json.load(open('LATEST.json')).get('machine',''))")
+    if [ -n "$LATEST_MACHINE" ] && [ "$LATEST_MACHINE" != "$CURRENT_MACHINE" ]; then
+      echo "DIFFERENT_MACHINE_WARNING=yes"
+      echo "WARNING_TEXT=마지막 작업은 [${LATEST_MACHINE}]에서 했습니다. 거기에 push 안 한 변경이 남아있을 수 있어요 — 확인하셨나요?"
+    else
+      echo "DIFFERENT_MACHINE_WARNING=no"
+    fi
+
+    # IN_FLIGHT.json: 여러 프로젝트가 in-flight 상태인지 알림 (받기가 옵션 제시 가능)
+    if [ -f IN_FLIGHT.json ]; then
+      python3 <<'EOF'
+import json
+try:
+    with open("IN_FLIGHT.json") as f:
+        flight = json.load(f)
+    projects = flight.get("projects", {})
+    n = len(projects)
+    print(f"IN_FLIGHT_COUNT={n}")
+    if n > 1:
+        # LATEST 외의 활성 프로젝트들도 한 줄씩 출력
+        with open("LATEST.json") as f2:
+            latest_proj = json.load(f2).get("project")
+        others = [p for p in projects if p != latest_proj]
+        for i, name in enumerate(others, 1):
+            e = projects[name]
+            print(f"OTHER_{i}_PROJECT={name}")
+            print(f"OTHER_{i}_MACHINE={e.get('machine','')}")
+            print(f"OTHER_{i}_TIMESTAMP={e.get('timestamp','')}")
+            print(f"OTHER_{i}_COMMIT_SHORT={e.get('commit_short','')}")
+            print(f"OTHER_{i}_SUMMARY={e.get('summary','')}")
+except Exception as ex:
+    print(f"IN_FLIGHT_PARSE_ERROR={ex}")
+EOF
+    else
+      echo "IN_FLIGHT_COUNT=0"
+    fi
 
     echo ""
     echo "═══ 최근 5개 history (참고) ═══"

@@ -48,10 +48,11 @@ git pull --quiet --ff-only origin main || {
   git reset --hard --quiet origin/main
 }
 
-# === 2) LATEST.json 갱신 ===
+# === 2) LATEST.json (가장 최근 1건) + IN_FLIGHT.json (멀티-프로젝트 상태) 갱신 ===
 python3 - <<EOF
-import json
-data = {
+import json, os
+
+entry = {
   "project": ${PROJECT@Q},
   "repo": ${REPO_URL@Q},
   "branch": ${BRANCH@Q},
@@ -63,8 +64,33 @@ data = {
   "timestamp_utc": ${TIMESTAMP_ISO@Q},
   "summary": ${SUMMARY@Q},
 }
+
+# LATEST.json: 항상 덮어쓰기 (가장 최근 1건)
 with open("LATEST.json", "w") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
+    json.dump(entry, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+
+# IN_FLIGHT.json: 기존 다른 프로젝트 entry는 보존, 이번 프로젝트만 갱신
+in_flight_path = "IN_FLIGHT.json"
+if os.path.exists(in_flight_path):
+    try:
+        with open(in_flight_path) as f:
+            flight = json.load(f)
+        if not isinstance(flight, dict) or "projects" not in flight:
+            flight = {"projects": {}, "last_updated": None}
+    except Exception:
+        flight = {"projects": {}, "last_updated": None}
+else:
+    flight = {"projects": {}, "last_updated": None}
+
+flight["projects"][entry["project"]] = {
+    k: v for k, v in entry.items() if k != "project"
+}
+flight["last_updated"] = ${TIMESTAMP_ISO@Q}
+flight["last_updated_machine"] = ${MACHINE@Q}
+
+with open(in_flight_path, "w") as f:
+    json.dump(flight, f, indent=2, ensure_ascii=False)
     f.write("\n")
 EOF
 
@@ -113,7 +139,7 @@ else
 fi
 
 # === 5) commit + push ===
-git add LATEST.json INDEX.md "$PROJ_FILE"
+git add LATEST.json IN_FLIGHT.json INDEX.md "$PROJ_FILE"
 
 if [ -z "$(git diff --cached --name-only)" ]; then
   echo "ℹ️  인덱스에 변경 없음 (이미 동일한 상태)"

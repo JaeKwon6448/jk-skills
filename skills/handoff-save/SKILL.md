@@ -1,6 +1,6 @@
 ---
-name: 넘기기
-description: 현재 프로젝트의 작업 상태(코드 + 작업목록 + 다음 할일)를 GitHub에 저장하고, 동시에 `jk-handoff` 인덱스 repo에 "어느 컴퓨터에서 무엇을 작업했는지" 이력을 누적하는 스킬. "넘기기", "저장", "백업", "동기화", "한 번 정리해", "save state", "handoff" 같은 표현이 나오면 즉시 트리거. 슬래시 `/넘기기`, `/handoff`도 받음. 핵심은 단순 git push가 아니라 "내가 지금 뭘 하고 있었는지"를 패키징해서 GitHub로 옮기는 것. **반대 방향(다른 컴퓨터에서 받아오는 것)은 별도 [받기] 스킬을 사용한다 — 사용자가 "받기", "이어가기", "다른 컴퓨터에서 왔어" 등을 말하면 받기 스킬로 라우팅하고 이 스킬은 호출하지 말 것.**
+name: handoff-save
+description: "넘기기" — 현재 프로젝트의 작업 상태(코드 + 작업목록 + 다음 할일)를 GitHub에 저장하고, 동시에 `jk-handoff` 인덱스 repo에 "어느 컴퓨터에서 무엇을 작업했는지" 이력을 누적하는 스킬. **트리거: "넘기기", "저장", "백업", "동기화", "한 번 정리해", "오늘 한 거 저장", "save state", "handoff", "push 하자".** 슬래시 `/넘기기`, `/handoff`도 받음. 단순 git push가 아니라 "내가 지금 뭘 하고 있었는지"를 패키징해서 GitHub로 옮기는 게 핵심. **반대 방향(다른 컴퓨터에서 받아오는 것)은 별도 [handoff-receive] 스킬을 사용한다 — 사용자가 "받기", "이어가기", "다른 컴퓨터에서 왔어" 등을 말하면 받기 스킬로 라우팅하고 이 스킬은 호출하지 말 것.**
 ---
 
 # 넘기기 — 작업 상태를 GitHub로 저장
@@ -67,11 +67,11 @@ projects/<프로젝트>.md  프로젝트별 누적 이력
 
 5. **커밋 + 푸시 + 인덱스 갱신**:
    ```bash
-   bash ~/.claude/skills/넘기기/scripts/save.sh "한 줄 요약"
+   bash "$CLAUDE_PLUGIN_ROOT/scripts/save.sh" "한 줄 요약"
    ```
    이 스크립트가 처리하는 것:
    - `git add HANDOFF.md` + 변경된 tracked 파일들 + commit + push
-   - 자동으로 `update_index.sh` 호출해서 `jk-handoff` repo 갱신
+   - 자동으로 `update_index.sh` 호출해서 `jk-handoff` repo 갱신 (`LATEST.json` + `IN_FLIGHT.json` + `INDEX.md` + `projects/<name>.md` 4개 동시)
    - 커밋 메시지는 `chore(handoff): <한 줄 요약>` 형태, `--no-verify` 금지
 
    "한 줄 요약"은 사용자에게 묻지 말고 대화 맥락에서 뽑아 전달. (예: "OE 엔진 v2 매수 신호 튜닝 진행 중")
@@ -90,16 +90,32 @@ projects/<프로젝트>.md  프로젝트별 누적 이력
 
 ## STATUS 모드 — 저장하지 않고 확인만
 
+**모드 2개**:
+
+### 단일 프로젝트 (현재 cwd만)
+
 ```bash
-bash ~/.claude/skills/넘기기/scripts/status.sh
+bash "$CLAUDE_PLUGIN_ROOT/scripts/status.sh"
 ```
 
-출력:
-- 마지막 HANDOFF.md (있으면) 작성 시각
-- 현재 변경 파일 (`git status --short`)
-- 원격과의 차이 (ahead/behind)
+출력: 마지막 HANDOFF.md 작성 시각 + 현재 변경 파일 + 원격과의 차이 (ahead/behind).
 
-이후 "저장하시려면 `/넘기기` 하라"고 안내.
+### 전체 스캔 — **머신 옮기기 전에 강력 권장**
+
+```bash
+bash "$CLAUDE_PLUGIN_ROOT/scripts/status_all.sh"
+```
+
+알려진 활성 프로젝트들(`stock-team`, `honi-team`, `jk-skills` + `IN_FLIGHT.json`에 기록된 것들)을 한꺼번에 스캔. 미커밋/미푸시 작업을 한눈에 보여줌. 사용자가 "오늘 작업 다 저장됐나?" "이 머신에 두고 가는 거 없나?" 같이 물으면 이걸 호출.
+
+출력 예시:
+```
+✅ stock-team           깨끗 (브랜치: main)
+⚠️ honi-team            5개 파일 미커밋 (브랜치: main)
+📤 jk-skills            1 commit 미푸시 (브랜치: main)
+```
+
+미저장 작업 있으면 사용자에게 "honi-team 가서 넘기기 할까요?" 같이 제안.
 
 ---
 

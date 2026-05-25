@@ -50,10 +50,17 @@ claude plugin marketplace remove jk-skills
 ## 설치 후 디렉토리
 
 ```
-~/.claude/plugins/cache/jk-skills/handoff-save/1.0.0/
-~/.claude/plugins/cache/jk-skills/handoff-receive/1.0.0/
+~/.claude/plugins/cache/jk-skills/handoff-save/1.1.0/
+~/.claude/plugins/cache/jk-skills/handoff-receive/1.1.0/
 ~/.cache/jk-handoff/                          ← 인덱스 캐시 (첫 받기 시 자동 생성)
 ```
+
+## v1.1.0 변경점 — 멀티-프로젝트 꼬임 방지
+
+- **`IN_FLIGHT.json`** 신규: jk-handoff 인덱스에 멀티-프로젝트 상태 추적 (LATEST 1건 + 모든 활성 프로젝트 상태)
+- **받기 시 머신 경고**: LATEST 머신과 현재 머신이 다르면 "이전 머신에 미저장 변경 있을 수 있음" 안내
+- **`status_all.sh` 신규**: 알려진 활성 프로젝트들의 git 상태 한꺼번에 스캔. 머신 옮기기 전에 미저장 작업 한눈에 확인
+- **plugin name과 SKILL.md name 모두 ASCII로 통일** (`handoff-save`, `handoff-receive`). 자연어 트리거는 description의 한글 키워드("넘기기", "받기" 등)로 매칭
 
 ## 직접 개발/수정하려면
 
