@@ -81,7 +81,42 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/pull_project.sh" <project> <repo_url> <branch>
 - 로컬에 commit되지 않은 변경이 있으면 **중단** (덮어쓰지 않음) — 사용자에게 알리고 어떻게 할지 묻기
 - 마지막에 프로젝트 경로 출력 → Claude가 이걸 받아서 후속 작업
 
-### 4단계: HANDOFF.md 읽고 브리핑
+### 4단계: snapshot diff 분석 (이 머신 떠난 후 무엇이 바뀌었나)
+
+`jk-handoff` 의 `snapshots/<project>/` 폴더에 매 넘기기마다 HANDOFF.md 사본이 머신별/시간순으로 누적됨. 받기 시 다음 흐름으로 이 데이터를 활용:
+
+```bash
+# 비교 대상 snapshot 두 개 찾기
+eval "$(bash "$CLAUDE_PLUGIN_ROOT/scripts/find_snapshots.sh" <project>)"
+# → PREV_SNAPSHOT, CURR_SNAPSHOT, MACHINE_ID 등 env 설정됨
+
+# diff 분석 (자연어 brief)
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/analyze_diff.py" "$PREV_SNAPSHOT" "$CURR_SNAPSHOT"
+```
+
+출력 예시:
+```
+🔄 이 머신을 마지막으로 떠난 후 변화:
+
+🎯 작업 초점 동일: OE 엔진 v2 매수 신호 튜닝
+
+✅ 완료된 TODO 3개:
+  - 백테스트 6개월 결과 검토
+  - 위험도 임계값 0.7 → 0.6 조정
+  - 텔레그램 알림 한 줄 요약 추가
+
+➕ 새로 추가된 TODO 2개:
+  - 켈리 비율 적용 검토
+  - 시나리오 d 백테스트 실행
+
+⚠️ 계속 남은 미해결 질문 1개 (이번엔 처리?):
+  - 거장 의견 충돌 시 어느 쪽 우선?
+```
+
+- `PREV_SNAPSHOT=NONE` 이면 → "이 머신에서는 이 프로젝트 첫 받기" 모드 자동 분기 (analyze_diff.py가 알아서 처리)
+- diff brief는 사용자에게 그대로 보여주거나, 자연스럽게 다듬어서 5단계 브리핑에 통합
+
+### 5단계: HANDOFF.md 읽고 브리핑
 
 `<프로젝트경로>/HANDOFF.md`를 Read 도구로 읽어서 사용자에게 정성껏 브리핑:
 
@@ -105,11 +140,11 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/pull_project.sh" <project> <repo_url> <branch>
 <있으면 "메모/결정사항" 섹션 마지막 entry>
 ```
 
-### 5단계: TODO를 TaskCreate로 자동 등록
+### 6단계: TODO를 TaskCreate로 자동 등록
 
 브리핑 직후 `TaskCreate` 도구가 있으면 HANDOFF.md의 미완료 TODO를 작업 목록으로 등록. 사용자가 "응 그대로 시작" 한마디로 바로 일 들어갈 수 있게.
 
-### 6단계: 사용자 응답 대기
+### 7단계: 사용자 응답 대기
 
 "이거 그대로 시작할까요, 아니면 다른 거 먼저 할까요?"
 

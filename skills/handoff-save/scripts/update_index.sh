@@ -20,12 +20,20 @@ INDEX_REPO="JaeKwon6448/jk-handoff"
 INDEX_URL="https://github.com/${INDEX_REPO}.git"
 CACHE_DIR="${HOME}/.cache/jk-handoff"
 
-# 머신 이름 (macOS는 사용자 친화적 이름 우선)
+# 머신 이름 분리: 표시용(한글 OK) / 파일명용(ASCII 안전)
 MACHINE=$(scutil --get ComputerName 2>/dev/null || hostname)
+MACHINE_ID=$(scutil --get LocalHostName 2>/dev/null || hostname -s)
+# fallback sanitize (혹시 LocalHostName에 비ASCII 섞이면)
+MACHINE_ID=$(echo "$MACHINE_ID" | LC_ALL=C sed 's/[^A-Za-z0-9._-]/_/g')
+
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M %Z')
 TIMESTAMP_ISO=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+TIMESTAMP_SLUG=$(date '+%Y-%m-%d_%H%M')
 SHORT_SHA="${COMMIT_SHA:0:7}"
 COMMIT_URL=$(echo "$REPO_URL" | sed 's#git@github.com:#https://github.com/#; s#\.git$##')/commit/${COMMIT_SHA}
+
+# 호출자(save.sh)가 HANDOFF.md 경로를 6번째 인자로 넘기면 snapshot 저장
+HANDOFF_PATH="${6:-}"
 
 # === 1) 캐시 준비 ===
 mkdir -p "$(dirname "$CACHE_DIR")"
@@ -138,8 +146,34 @@ else
   ' "$PROJ_FILE" > "$PROJ_FILE.tmp" && mv "$PROJ_FILE.tmp" "$PROJ_FILE"
 fi
 
+# === 4.5) snapshots/<project>/<MACHINE_ID>__<TIMESTAMP_SLUG>.md — HANDOFF.md 시계열 사본 ===
+SNAPSHOT_PATH=""
+if [ -n "$HANDOFF_PATH" ] && [ -f "$HANDOFF_PATH" ]; then
+  SNAPSHOT_DIR="snapshots/${PROJECT}"
+  mkdir -p "$SNAPSHOT_DIR"
+  SNAPSHOT_PATH="${SNAPSHOT_DIR}/${MACHINE_ID}__${TIMESTAMP_SLUG}.md"
+
+  # 메타데이터 헤더 + 원본 HANDOFF.md 본문
+  {
+    echo "<!--"
+    echo "snapshot_meta:"
+    echo "  project: ${PROJECT}"
+    echo "  machine: ${MACHINE}"
+    echo "  machine_id: ${MACHINE_ID}"
+    echo "  timestamp: ${TIMESTAMP}"
+    echo "  timestamp_utc: ${TIMESTAMP_ISO}"
+    echo "  commit: ${COMMIT_SHA}"
+    echo "  branch: ${BRANCH}"
+    echo "  summary: ${SUMMARY}"
+    echo "-->"
+    echo ""
+    cat "$HANDOFF_PATH"
+  } > "$SNAPSHOT_PATH"
+fi
+
 # === 5) commit + push ===
 git add LATEST.json IN_FLIGHT.json INDEX.md "$PROJ_FILE"
+[ -n "$SNAPSHOT_PATH" ] && git add "$SNAPSHOT_PATH"
 
 if [ -z "$(git diff --cached --name-only)" ]; then
   echo "ℹ️  인덱스에 변경 없음 (이미 동일한 상태)"

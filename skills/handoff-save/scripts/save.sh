@@ -116,7 +116,11 @@ fi
 echo ""
 
 # === 인덱스 repo 갱신 (jk-handoff) ===
-bash "$(dirname "$0")/update_index.sh" "$PROJECT" "$REPO_URL_RAW" "$BRANCH" "$FULL_SHA" "$SUMMARY" || {
+# 6번째 인자로 HANDOFF.md 절대 경로 전달 → snapshot 자동 저장
+HANDOFF_ABS=""
+[ -f "$REPO_ROOT/HANDOFF.md" ] && HANDOFF_ABS="$REPO_ROOT/HANDOFF.md"
+
+bash "$(dirname "$0")/update_index.sh" "$PROJECT" "$REPO_URL_RAW" "$BRANCH" "$FULL_SHA" "$SUMMARY" "$HANDOFF_ABS" || {
   echo "⚠️  인덱스 갱신 실패 (메인 push는 성공). 다음에 받기 시 LATEST.json은 이전 값."
 }
 

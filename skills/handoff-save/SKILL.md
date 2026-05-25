@@ -65,13 +65,17 @@ projects/<프로젝트>.md  프로젝트별 누적 이력
 
 4. **이미 있는 HANDOFF.md는 보존**: "메모/결정사항" 섹션은 append만, 다른 섹션만 새 내용으로 교체.
 
-5. **커밋 + 푸시 + 인덱스 갱신**:
+5. **커밋 + 푸시 + 인덱스 갱신 + snapshot 자동 저장**:
    ```bash
    bash "$CLAUDE_PLUGIN_ROOT/scripts/save.sh" "한 줄 요약"
    ```
    이 스크립트가 처리하는 것:
    - `git add HANDOFF.md` + 변경된 tracked 파일들 + commit + push
-   - 자동으로 `update_index.sh` 호출해서 `jk-handoff` repo 갱신 (`LATEST.json` + `IN_FLIGHT.json` + `INDEX.md` + `projects/<name>.md` 4개 동시)
+   - 자동으로 `update_index.sh` 호출 → `jk-handoff` repo 갱신:
+     - `LATEST.json` (가장 최근 1건)
+     - `IN_FLIGHT.json` (모든 활성 프로젝트 마지막 상태)
+     - `INDEX.md` + `projects/<name>.md` (시계열 prepend)
+     - **`snapshots/<project>/<machine_id>__<YYYY-MM-DD_HHmm>.md`** ← v1.2.0 신규. HANDOFF.md 본문 시계열 사본. 받기 시 diff 분석 재료가 됨
    - 커밋 메시지는 `chore(handoff): <한 줄 요약>` 형태, `--no-verify` 금지
 
    "한 줄 요약"은 사용자에게 묻지 말고 대화 맥락에서 뽑아 전달. (예: "OE 엔진 v2 매수 신호 튜닝 진행 중")
