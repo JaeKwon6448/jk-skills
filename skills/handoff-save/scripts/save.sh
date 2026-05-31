@@ -42,15 +42,30 @@ fi
 # 변경 사항이 아예 없으면 push만 시도하고 종료
 if [ -z "$(git status --short)" ]; then
   echo "ℹ️  로컬 변경 없음."
-  UNPUSHED=$(git log "origin/${BRANCH}..HEAD" --oneline 2>/dev/null | wc -l | tr -d ' ')
+
+  # 원격 추적 ref(origin/<branch>) 존재 여부 확인.
+  # 신규 repo 첫 푸시 전에는 이 ref가 없어 `git log origin/main..HEAD`가 빈 값이 되고,
+  # 그러면 "원격과 동기화"로 잘못 빠져 push를 건너뛰는 버그가 있었다.
+  if git rev-parse --verify --quiet "refs/remotes/origin/${BRANCH}" >/dev/null 2>&1; then
+    # 추적 ref 있음 — 평소대로 origin 대비 미푸시 commit 수 계산
+    UNPUSHED=$(git log "origin/${BRANCH}..HEAD" --oneline 2>/dev/null | wc -l | tr -d ' ')
+  else
+    # 추적 ref 없음 = 아직 한 번도 push 안 된 상태로 간주. 로컬 commit 전부가 미푸시.
+    echo "ℹ️  origin/${BRANCH} 추적 ref 없음 — 첫 푸시로 간주."
+    UNPUSHED=$(git rev-list --count HEAD 2>/dev/null || echo 0)
+  fi
+
   if [ "$UNPUSHED" != "0" ] && [ -n "$UNPUSHED" ]; then
     echo "🚀 푸시되지 않은 commit $UNPUSHED 개 — push 시도..."
-    git push origin "$BRANCH"
+    # -u: 첫 푸시 시 upstream을 설정해 다음부터 origin/<branch> 비교가 정상 동작하도록 함
+    git push -u origin "$BRANCH"
     echo "✅ push 완료"
     # 인덱스 갱신 (새 commit이 있으니까)
     COMMIT_SHA=$(git rev-parse HEAD)
     REPO_URL=$(git config --get "remote.origin.url")
-    bash "$(dirname "$0")/update_index.sh" "$PROJECT" "$REPO_URL" "$BRANCH" "$COMMIT_SHA" "$SUMMARY" || true
+    HANDOFF_ABS=""
+    [ -f "$REPO_ROOT/HANDOFF.md" ] && HANDOFF_ABS="$REPO_ROOT/HANDOFF.md"
+    bash "$(dirname "$0")/update_index.sh" "$PROJECT" "$REPO_URL" "$BRANCH" "$COMMIT_SHA" "$SUMMARY" "$HANDOFF_ABS" || true
   else
     echo "✅ 원격과 동기화된 상태. 할 일 없음."
   fi
@@ -91,8 +106,8 @@ git commit -m "$COMMIT_MSG" || {
   exit 3
 }
 
-# Push
-git push origin "$BRANCH" || {
+# Push (-u: 첫 푸시 시 upstream 설정 → 이후 origin/<branch> 비교가 정상 동작)
+git push -u origin "$BRANCH" || {
   echo "❌ push 실패. 원격이 앞서 있을 수 있음 — git fetch 후 상황 확인 필요."
   echo "   주의: --force는 절대 자동으로 쓰지 말 것."
   exit 4

@@ -57,20 +57,34 @@ git pull --quiet --ff-only origin main || {
 }
 
 # === 2) LATEST.json (가장 최근 1건) + IN_FLIGHT.json (멀티-프로젝트 상태) 갱신 ===
-python3 - <<EOF
+# bash 3.2(맥 기본) 호환: ${VAR@Q}(bash 4.4+ 전용)는 'bad substitution'으로 깨진다.
+# 대신 값들을 환경변수로 export 하고, 따옴표로 감싼 heredoc(<<'EOF') 안의 python이
+# os.environ에서 읽는다. 셸 인용/이스케이프 없이 임의 문자열(따옴표·한글·줄바꿈)이 안전.
+export HO_PROJECT="$PROJECT"
+export HO_REPO_URL="$REPO_URL"
+export HO_BRANCH="$BRANCH"
+export HO_COMMIT_SHA="$COMMIT_SHA"
+export HO_SHORT_SHA="$SHORT_SHA"
+export HO_COMMIT_URL="$COMMIT_URL"
+export HO_MACHINE="$MACHINE"
+export HO_TIMESTAMP="$TIMESTAMP"
+export HO_TIMESTAMP_ISO="$TIMESTAMP_ISO"
+export HO_SUMMARY="$SUMMARY"
+
+python3 - <<'EOF'
 import json, os
 
 entry = {
-  "project": ${PROJECT@Q},
-  "repo": ${REPO_URL@Q},
-  "branch": ${BRANCH@Q},
-  "commit": ${COMMIT_SHA@Q},
-  "commit_short": ${SHORT_SHA@Q},
-  "commit_url": ${COMMIT_URL@Q},
-  "machine": ${MACHINE@Q},
-  "timestamp": ${TIMESTAMP@Q},
-  "timestamp_utc": ${TIMESTAMP_ISO@Q},
-  "summary": ${SUMMARY@Q},
+  "project": os.environ["HO_PROJECT"],
+  "repo": os.environ["HO_REPO_URL"],
+  "branch": os.environ["HO_BRANCH"],
+  "commit": os.environ["HO_COMMIT_SHA"],
+  "commit_short": os.environ["HO_SHORT_SHA"],
+  "commit_url": os.environ["HO_COMMIT_URL"],
+  "machine": os.environ["HO_MACHINE"],
+  "timestamp": os.environ["HO_TIMESTAMP"],
+  "timestamp_utc": os.environ["HO_TIMESTAMP_ISO"],
+  "summary": os.environ["HO_SUMMARY"],
 }
 
 # LATEST.json: 항상 덮어쓰기 (가장 최근 1건)
@@ -94,8 +108,8 @@ else:
 flight["projects"][entry["project"]] = {
     k: v for k, v in entry.items() if k != "project"
 }
-flight["last_updated"] = ${TIMESTAMP_ISO@Q}
-flight["last_updated_machine"] = ${MACHINE@Q}
+flight["last_updated"] = os.environ["HO_TIMESTAMP_ISO"]
+flight["last_updated_machine"] = os.environ["HO_MACHINE"]
 
 with open(in_flight_path, "w") as f:
     json.dump(flight, f, indent=2, ensure_ascii=False)
