@@ -12,7 +12,7 @@
       "displayName": "넘기기 (Save & Handoff)",
       "description": "현재 프로젝트의 작업 상태를 HANDOFF.md로 패키징 + GitHub push + jk-handoff 인덱스 repo에 머신별 이력 누적. 트리거: '넘기기', '저장', '백업', '동기화'. (plugin name은 path-safe 영문, 자연어 트리거는 SKILL.md의 한글 'name: 넘기기'가 담당)",
       "source": "./skills/handoff-save",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "author": {
         "name": "JK"
       }
